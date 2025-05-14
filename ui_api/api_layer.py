@@ -10,4 +10,5 @@ class APILayer:
         """
         Handles an API call to a specific endpoint.
         """
-        pass
+        print(f"API call to {endpoint} with data: {data}")
+        return {"endpoint": endpoint, "data": data, "status": "success"}

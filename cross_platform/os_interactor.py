@@ -7,7 +7,6 @@ class OSInteractor:
         pass
 
     def execute_command(self, command: str):
-        """
-        Executes an OS command and returns the result.
-        """
-        pass
+        # Mock: just print the command
+        print(f"Executing command: {command}")
+        return f"Executed: {command}"

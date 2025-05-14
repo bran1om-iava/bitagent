@@ -7,7 +7,5 @@ class DataProcessor:
         pass
 
     def process(self, raw_data):
-        """
-        Processes raw data and returns structured data.
-        """
-        pass
+        # Mock: just wrap raw_data in a dict
+        return {"processed": True, "data": raw_data}

@@ -4,16 +4,17 @@ class CLIInterface:
     """
 
     def __init__(self):
-        pass
+        self.running = False
 
     def start(self):
-        """
-        Starts the CLI loop.
-        """
-        pass
+        self.running = True
+        print("CLI started. Type 'exit' to quit.")
+        while self.running:
+            cmd = input("agent> ")
+            if cmd.strip() == 'exit':
+                self.running = False
+            else:
+                self.handle_command(cmd)
 
     def handle_command(self, command: str):
-        """
-        Handles a user command from the CLI.
-        """
-        pass
+        print(f"Handling command: {command}")

@@ -7,7 +7,5 @@ class AnalysisEngine:
         pass
 
     def analyze(self, structured_data):
-        """
-        Analyzes structured data and returns analysis results.
-        """
-        pass
+        # Mock: return a summary
+        return {"analysis": "summary", "input_size": len(str(structured_data))}

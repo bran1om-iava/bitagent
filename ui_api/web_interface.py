@@ -4,16 +4,20 @@ class WebInterface:
     """
 
     def __init__(self):
-        pass
+        self.server_running = False
 
     def start_server(self, host: str = '0.0.0.0', port: int = 8000):
         """
         Starts the web server.
         """
-        pass
+        self.server_running = True
+        print(f"Web server started at http://{host}:{port}")
+        # Mock: just print, no real server
+        return True
 
     def handle_request(self, request):
         """
         Handles a web request.
         """
-        pass
+        print(f"Handling web request: {request}")
+        return {"status": "ok", "request": request}
