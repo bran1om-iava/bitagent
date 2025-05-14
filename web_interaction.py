@@ -1,4 +1,6 @@
 from playwright.async_api import Page, TimeoutError as PlaywrightTimeoutError
+from typing import List, Any
+import asyncio
 
 
 async def navigate_to_url(page: Page, url: str, wait_for_selector: str = None):
@@ -116,3 +118,98 @@ async def type_text(page: Page, selector: str, text: str):
     except Exception as e:
         print(f"An error occurred while typing into element: {e}")
         raise
+
+
+async def extract_table_data(page: Page, selector: str) -> List[List[str]] | None:
+    """
+    Extracts data from the first HTML table matching the selector.
+
+    Args:
+        page: The Playwright Page object.
+        selector: The CSS selector for the table element.
+
+    Returns:
+        A list of lists representing the table data, or None if the table is not found.
+    """
+    try:
+        print(
+            f"Attempting to extract data from table with selector: {selector}")
+        table_element = page.locator(selector).first
+
+        if await table_element.count() == 0:
+            print(f"Table not found for selector: {selector}")
+            return None
+
+        data: List[List[str]] = []
+        rows = table_element.locator("tr")
+
+        for i in range(await rows.count()):
+            row_element = rows.nth(i)
+            cells = row_element.locator("th, td")
+            row_data: List[str] = []
+            for j in range(await cells.count()):
+                cell_element = cells.nth(j)
+                text = await cell_element.text_content()
+                row_data.append(text.strip() if text else "")
+            data.append(row_data)
+
+        print(
+            f"Successfully extracted data from table with selector: {selector}")
+        return data
+
+    except Exception as e:
+        print(f"An error occurred while extracting table data: {e}")
+        return None
+
+
+async def take_screenshot(page: Page, path: str) -> None:
+    """
+    Takes a screenshot of the current page and saves it to a file.
+
+    Args:
+        page: The Playwright Page object.
+        path: The file path to save the screenshot (e.g., "screenshot.png").
+    """
+    try:
+        print(f"Attempting to take screenshot and save to {path}")
+        await page.screenshot(path=path)
+        print(f"Screenshot saved successfully to {path}")
+    except Exception as e:
+        print(f"An error occurred while taking screenshot: {e}")
+        # Depending on requirements, we might raise the exception or just log
+
+
+async def handle_dialog(page: Page, accept: bool = True, prompt_text: str | None = None) -> None:
+    """
+    Handles a dialog (alert, confirm, prompt) that appears on the page.
+
+    Args:
+        page: The Playwright Page object.
+        accept: Whether to accept (True) or dismiss (False) the dialog.
+                Defaults to True.
+        prompt_text: The text to enter if the dialog is a prompt. Only used if accept is True.
+    """
+    try:
+        # Playwright automatically dismisses dialogs by default unless a handler is attached.
+        # We attach a one-time handler here.
+        page.once("dialog", lambda dialog: asyncio.create_task(
+            _handle_specific_dialog(dialog, accept, prompt_text)))
+        print("Dialog handler registered.")
+        # Note: The dialog event is emitted as soon as the dialog appears.
+        # The action that caused the dialog to appear should be called before this handler is needed.
+    except Exception as e:
+        print(f"An error occurred while setting up dialog handler: {e}")
+
+
+async def _handle_specific_dialog(dialog, accept: bool, prompt_text: str | None) -> None:
+    """Internal helper to handle the specific dialog instance."""
+    print(f"Dialog appeared - type: {dialog.type}, message: {dialog.message}")
+    if accept:
+        print("Accepting dialog.")
+        if dialog.type == "prompt" and prompt_text is not None:
+            await dialog.accept(prompt_text)
+        else:
+            await dialog.accept()
+    else:
+        print("Dismissing dialog.")
+        await dialog.dismiss()
