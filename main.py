@@ -1,40 +1,52 @@
 import asyncio
 from orchestrator import Orchestrator
-from agent import NavigateAction, ExtractAction, ClickAction, TypeAction, Action
+# Import process_instruction from the new nlp_processor module
+from nlp_processor import process_instruction
+# Keep Action types imported as they are used within the workflow list type hint
+from agent import Action
 from typing import List, Any
 
 
 async def main():
     """
     Main function to initialize the orchestrator, create an agent,
-    define and execute a workflow, and shut down.
+    process a natural language instruction into a workflow,
+    execute the workflow, and shut down.
     """
     orchestrator = Orchestrator()
+    agent = None  # Initialize agent to None for finally block
+
     try:
         # Initialize the orchestrator and launch the browser (headless=False to see the browser)
         await orchestrator.initialize(headless=True)
+        print("Orchestrator initialized.")
 
         # Create an agent managed by the orchestrator
         agent = await orchestrator.create_agent()
+        print("Agent created.")
 
-        # --- Define a simple test workflow ---
-        # Example: Navigate to a page and extract a heading
-        test_workflow: List[Action] = [
-            NavigateAction(url="https://www.wikipedia.org/",
-                           wait_for_selector="#main-page-content"),
-            ExtractAction(selector="#main-page-content h1"),
-            NavigateAction(
-                url="https://www.wikipedia.org/wiki/Artificial_intelligence"),
-            ExtractAction(selector="#firstHeading")
-            # Add more actions as needed, e.g.:
-            # ClickAction(selector="..."),
-            # TypeAction(selector="..."),
-        ]
-        # -----------------------------------
+        # --- Sample Natural Language Instruction ---
+        # This instruction will be processed by the nlp_processor
+        # instruction = "Go to https://www.wikipedia.org/"
+        # Let's use a different page for variety
+        instruction = "Go to https://www.wikipedia.org/wiki/Large_language_model"
+
+        print(f"\n--- Processing Instruction: \"{instruction}\" ---")
+        # Process the instruction to get a list of Action objects (the workflow)
+        generated_workflow: List[Action] = process_instruction(instruction)
+
+        if not generated_workflow:
+            print("No actions generated from the instruction. Exiting.")
+            return  # Exit if no valid workflow was generated
+
+        print(
+            f"Generated Workflow: {[action.description for action in generated_workflow]}")
 
         print("\n--- Starting Workflow Execution ---")
-        # Execute the workflow using the created agent
-        workflow_results = await orchestrator.execute_workflow_with_agent(agent, test_workflow)
+        # Execute the generated workflow using the created agent
+        # Note: Currently, our simple processor only generates one action per instruction.
+        # A more advanced processor would generate sequences.
+        workflow_results = await orchestrator.execute_workflow_with_agent(agent, generated_workflow)
 
         print("\n--- Workflow Execution Results ---")
         for i, result in enumerate(workflow_results):
@@ -45,8 +57,9 @@ async def main():
         print(f"\nAn error occurred during the main execution: {e}")
     finally:
         # Ensure orchestrator is shut down even if errors occur
-        await orchestrator.shutdown()
-        print("\nOrchestrator has been shut down.")
+        if orchestrator:
+            await orchestrator.shutdown()
+            print("\nOrchestrator has been shut down.")
 
 
 if __name__ == "__main__":
