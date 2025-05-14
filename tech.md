@@ -1,52 +1,78 @@
 # BitAgentBrowser Technical Design Document
 
-This document outlines the technical design and architecture for implementing the BitAgentBrowser project using Python.
+This document outlines the technical design and architecture for implementing the BitAgentBrowser project using Python. It is based on the functional description provided in `proj.md`.
 
 ## 1. Project Overview
 - Briefly reiterate the goal: build an AI Agent-driven smart browsing platform.
 - Highlight the core idea: using AI Agents as digital twins for automating browser tasks.
 
-## 2. Core Technical Components (Mapping to proj.md features and architecture)
+## 2. Project Architecture
 
-### 2.1. Agent Management and Task Orchestration
-- How to manage multiple agents? (e.g., process/thread management, asynchronous programming)
-- Task scheduling and execution.
-- State management for agents.
-- Implementing the workflow engine (DAG-based as mentioned).
+The project architecture is organized in layers, aligning with the core functionalities and aiming for modularity, extensibility, robustness, and maintainability.
 
-### 2.2. Web Interaction and Parsing Engine
-- **Browser Automation**: Choosing a Python library (e.g., Playwright, Selenium) for controlling browsers (both GUI and headless).
-- **Dynamic Content Handling**: Strategies for waiting for elements, handling JavaScript, SPAs.
-- **Intelligent Parsing**: Using VLM/CV techniques (likely via external models or APIs) and DOM parsing (e.g., Beautiful Soup, lxml, integrating with browser automation tools).
-- **Anti-Crawler Strategies**: Implementing IP rotation, request throttling, user-agent switching, potentially integrating with CAPTCHA solving services.
-- **Context Management**: Handling cookies, sessions, and navigation history.
+```
++-----------------------+     +---------------------+     +-------------------+
+| User Interface / API  | --> | NLP Processor       | --> | Task Orchestrator |
+| (Command Input,       |     | (Instruction Parsing)|     | (Workflow Mgmt,   |
+| Feedback Display, etc)|     |                     |     | Agent Management)|
++-----------------------+     +---------------------+     +---------+---------+
+                                                                    |
++-----------------------+     +---------------------+     +---------v---------+
+| Data & Reporting      | <-- | Intelligent Layer   | <-- | Parsing Engine    |
+| (Analysis, Viz, etc.) |     | (Agent Logic, AI/ML |     | (DOM Parsing,     |
++-----------------------+     | Integration)        |     | Element Structuring)|
+                                                                    |
++-----------------------+     +---------------------+     +---------v---------+
+| Security & Isolation  | <-- | Interaction Layer   | <-- | Browser Automation|
+| (Sandboxing, Crypto)  |     | (Web Actions, Error)|     | (Playwright/etc.) |
++-----------------------+     +---------------------+     +-------------------+
+                                                                    |
+                                                        +-----------------------+
+                                                        | Anti-Crawler Module   |
+                                                        | (Strategies, Proxies)|
+                                                        +-----------------------+
+```
 
-### 2.3. Natural Language Interaction and Instruction Processing
-- Integrating with Large Language Models (LLMs) for understanding natural language instructions.
-- Parsing instructions into structured tasks for agents.
-- Managing conversational context.
+## 3. Module Design
 
-### 2.4. Data Processing, Analysis, and Reporting
-- Extracting data from parsed web content.
-- Data cleaning, transformation, and storage.
-- Integrating with data analysis libraries (e.g., Pandas).
-- Generating reports and visualizations (e.g., Matplotlib, Plotly).
+A breakdown of the key modules and their responsibilities:
 
-### 2.5. Cross-Platform Integration
-- Interacting with the local file system.
-- Simulating keyboard and mouse input.
-- Communication with external applications (e.g., via APIs, WebSocket).
+### 3.1. Core Modules
+-   `errors.py`: Defines custom exception classes for clear error handling.
+-   `agent.py`: Defines the base `Agent` class and the `Action` hierarchy. Agents encapsulate a browser page and execute sequences of actions (workflows).
+-   `web_interaction.py`: Provides low-level functions for interacting with the browser page using Playwright (navigation, clicking, typing, extraction). Handles Playwright-specific details and raises `BrowserInteractionError`.
+-   `orchestrator.py`: Manages the lifecycle of browser instances and agent objects. Responsible for assigning and executing workflows on agents, potentially in parallel.
+-   `nlp_processor.py`: Converts natural language instructions into structured `Action` or workflow representations.
+-   `main.py`: The application's entry point, handles setup, starts the orchestration process, and manages the main application loop.
 
-### 2.6. Security and Isolation
-- Running agents in isolated environments (e.g., Docker containers).
-- Managing resource allocation for containers.
-- Handling sensitive data (e.g., login credentials) securely.
-- Logging and auditing agent actions.
+### 3.2. Parsing Engine
+-   `dom_parser.py`: Focuses specifically on parsing the DOM tree of a page to identify elements, their attributes, and relationships.
+-   `semantic_parser.py`: Builds upon the DOM structure to create a more semantically meaningful representation of the page, identifying "digital twin nodes". May integrate VLM or other AI techniques.
+-   `data_extractor.py`: Extends extraction capabilities to handle more complex data structures beyond simple tables, potentially using semantic understanding.
 
-## 3. Technical Architecture Considerations
-- Discuss the four-layer architecture (Interaction, Parsing, Intelligent, Security) in the context of a Python implementation.
-- Choosing appropriate libraries and frameworks for each layer.
-- Communication between layers.
+### 3.3. Intelligent Layer
+-   `agent_logic.py`: Contains the core logic for how agents decide which actions to take based on state, parsed info, and task. Integrates AI/ML for decision-making.
+-   `workflow_engine.py`: Manages complex workflow execution, including conditional logic, loops, and error recovery.
+
+### 3.4. Security & Isolation
+-   `sandbox_manager.py`: Handles creating and managing isolated environments for agents (e.g., Docker, Playwright contexts).
+-   `credential_manager.py`: Securely stores and provides access to sensitive information.
+-   `auditing_logger.py`: Implements a logging and auditing system for tracking agent actions.
+
+### 3.5. Anti-Crawler Module
+-   `anti_crawler_strategies.py`: Implements techniques like user agent/header management, delays, proxies, CAPTCHA handling.
+
+### 3.6. Data & Reporting
+-   `data_processor.py`: Contains functions for cleaning, transforming, and structuring extracted data.
+-   `analysis_engine.py`: Provides capabilities for analyzing processed data.
+-   `reporter.py`: Handles generating reports and visualizations.
+
+### 3.7. Cross-Platform Interaction
+-   `os_interactor.py`: Provides a safe interface for agents to interact with the local operating system (files, input simulation).
+-   `communication_manager.py`: Handles communication with external systems or devices (e.g., WebSocket).
+
+### 3.8. User Interface / API
+-   `cli_interface.py` / `web_interface.py` / `api_layer.py`: Handle receiving input, displaying feedback, and presenting results.
 
 ## 4. Step-by-Step Implementation Plan (High-Level)
 - Break down the development process into phases (e.g., core browser control, basic parsing, agent execution, NLP integration, advanced features).
